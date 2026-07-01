@@ -1,8 +1,11 @@
 package com.example.tsubuyaki.controller;
 
+import com.example.tsubuyaki.service.LikeService;
+import com.example.tsubuyaki.service.PostNotFoundException;
 import com.example.tsubuyaki.service.PostService;
 import com.example.tsubuyaki.web.dto.PostForm;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,15 +15,22 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Controller
 public class PostController {
 
     private final PostService postService;
+    private final LikeService likeService;
 
-    public PostController(PostService postService) {
+    public PostController(PostService postService, LikeService likeService) {
         this.postService = postService;
+        this.likeService = likeService;
     }
 
     @GetMapping({ "/", "/posts", "/posts/" })
@@ -50,6 +60,28 @@ public class PostController {
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("post", postService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND)));
+        model.addAttribute("likeCount", likeService.countByPostId(id));
         return "posts/detail";
+    }
+
+    @PostMapping("/posts/{id}/likes")
+    public String toggleLike(@PathVariable Long id, HttpServletRequest request) {
+        try {
+            likeService.toggle(id, clientHash(request));
+        } catch (PostNotFoundException e) {
+            throw new ResponseStatusException(NOT_FOUND, "Post not found", e);
+        }
+        return "redirect:/posts/" + id;
+    }
+
+    private static String clientHash(HttpServletRequest request) {
+        String source = request.getRemoteAddr() + request.getHeader("User-Agent");
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(source.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest).substring(0, 8);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 }

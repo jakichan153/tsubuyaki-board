@@ -1,6 +1,7 @@
 package com.example.tsubuyaki.controller;
 
 import com.example.tsubuyaki.domain.Post;
+import com.example.tsubuyaki.service.LikeService;
 import com.example.tsubuyaki.service.PostService;
 import com.example.tsubuyaki.web.dto.PostForm;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +27,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,6 +47,9 @@ class PostControllerTest {
 
     @MockitoBean
     private PostService postService;
+
+    @MockitoBean
+    private LikeService likeService;
 
     @Test
     @DisplayName("投稿一覧_0件の場合_まだ投稿はありませんを表示する")
@@ -81,6 +87,20 @@ class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(matchesPattern(
                         "(?s).*alice.*本文がここに表示されます.*2026-06-30.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿一覧_各投稿に詳細リンクを表示する")
+    void 投稿一覧_各投稿に詳細リンクを表示する() throws Exception {
+        Post post = new Post("alice", "本文がここに表示されます", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
+        given(postService.latest()).willReturn(List.of(post));
+
+        mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<a[^>]*href=\"/posts/1\"[^>]*>詳細</a>.*"
                 )));
     }
 
@@ -133,14 +153,21 @@ class PostControllerTest {
     @DisplayName("投稿詳細_存在するid_posts_detailを表示し投稿をビューに渡す")
     void 投稿詳細_存在するid_posts_detailを表示し投稿をビューに渡す() throws Exception {
         Post post = new Post("alice", "詳細本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
         given(postService.findById(1L)).willReturn(Optional.of(post));
+        given(likeService.countByPostId(1L)).willReturn(3L);
 
         mockMvc.perform(get("/posts/1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("posts/detail"))
                 .andExpect(model().attribute("post", post))
+                .andExpect(model().attribute("likeCount", 3L))
                 .andExpect(content().string(matchesPattern(
-                        "(?s).*alice.*詳細本文です.*2026-06-30.*"
+                        "(?s).*alice.*詳細本文です.*2026-06-30.*いいね数.*3.*"
+                )))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<form[^>]*action=\"/posts/1/likes\"[^>]*method=\"post\"[^>]*>.*"
+                                + "<button[^>]*type=\"submit\"[^>]*>Like</button>.*"
                 )));
     }
 
@@ -150,6 +177,39 @@ class PostControllerTest {
         given(postService.findById(999L)).willReturn(Optional.empty());
 
         mockMvc.perform(get("/posts/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("いいね_POST_posts_id_likes_clientHashでトグルし詳細へリダイレクトする")
+    void いいね_POST_posts_id_likes_clientHashでトグルし詳細へリダイレクトする() throws Exception {
+        Post post = new Post("alice", "詳細本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        given(postService.findById(1L)).willReturn(Optional.of(post));
+
+        mockMvc.perform(post("/posts/1/likes")
+                        .header("User-Agent", "JUnit")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts/1"));
+
+        verify(likeService).toggle(1L, "e97515d4");
+    }
+
+    @Test
+    @DisplayName("いいね_存在しないid_404を返す")
+    void いいね_存在しないid_404を返す() throws Exception {
+        willThrow(new com.example.tsubuyaki.service.PostNotFoundException())
+                .given(likeService).toggle(999L, "e97515d4");
+
+        mockMvc.perform(post("/posts/999/likes")
+                        .header("User-Agent", "JUnit")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }))
                 .andExpect(status().isNotFound());
     }
 
@@ -170,5 +230,11 @@ class PostControllerTest {
                 Arguments.of(
                         "body空白のみ", validAuthor, "   ", "本文を入力してください")
         );
+    }
+
+    private static void setPostId(Post post, Long id) throws NoSuchFieldException, IllegalAccessException {
+        Field idField = Post.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(post, id);
     }
 }

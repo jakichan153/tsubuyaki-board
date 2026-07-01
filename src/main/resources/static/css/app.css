@@ -63,9 +63,66 @@ h1 {
     font-size: 0.85rem;
 }
 
+.post__footer {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.post__detail-link {
+    color: var(--color-accent);
+    font-size: 0.9rem;
+}
+
 .post__body {
     margin-top: 0.5rem;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: normal;
+}
+
+form[method="post"] {
+    margin-top: 1rem;
+}
+
+form[method="post"] > div {
+    margin-bottom: 1rem;
+}
+
+form[method="post"] label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+form[method="post"] input,
+form[method="post"] textarea {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text);
+    display: block;
+    font: inherit;
+    padding: 0.5rem 0.65rem;
+    width: 100%;
+}
+
+form[method="post"] textarea {
+    resize: vertical;
+}
+
+form[method="post"] button {
+    background: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font: inherit;
+    padding: 0.45rem 1rem;
+}
+
+.error {
+    color: #b91c1c;
+    font-size: 0.9rem;
+    margin: 0.35rem 0 0;
 }
