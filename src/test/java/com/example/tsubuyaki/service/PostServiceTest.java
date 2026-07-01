@@ -61,7 +61,7 @@ class PostServiceTest {
     void 投稿作成_create_現在日時を設定してRepositoryに保存する() {
         Instant before = Instant.now();
 
-        postService.create("alice", "初投稿です");
+        postService.create("alice", "初投稿です", "blue");
 
         Instant after = Instant.now();
         ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
@@ -69,6 +69,7 @@ class PostServiceTest {
         Post saved = captor.getValue();
         assertThat(saved.getAuthor()).isEqualTo("alice");
         assertThat(saved.getBody()).isEqualTo("初投稿です");
+        assertThat(saved.getAvatarColor()).isEqualTo("blue");
         assertThat(saved.getCreatedAt()).isBetween(before, after);
     }
 

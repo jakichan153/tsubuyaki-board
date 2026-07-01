@@ -82,6 +82,27 @@ h1 {
     word-break: normal;
 }
 
+.post__avatar {
+    border-radius: 999px;
+    display: inline-block;
+    height: 1rem;
+    margin-right: 0.5rem;
+    vertical-align: -0.1rem;
+    width: 1rem;
+}
+
+.post__avatar--gray {
+    background: #6b7280;
+}
+
+.post__avatar--blue {
+    background: #2563eb;
+}
+
+.post__avatar--green {
+    background: #16a34a;
+}
+
 form[method="post"] {
     margin-top: 1rem;
 }
@@ -97,6 +118,7 @@ form[method="post"] label {
 }
 
 form[method="post"] input,
+form[method="post"] select,
 form[method="post"] textarea {
     border: 1px solid var(--color-border);
     border-radius: 8px;

@@ -14,8 +14,10 @@ class PostFormTest {
 
         form.setAuthor("alice");
         form.setBody("本文です");
+        form.setAvatarColor("blue");
 
         assertThat(form.getAuthor()).isEqualTo("alice");
         assertThat(form.getBody()).isEqualTo("本文です");
+        assertThat(form.getAvatarColor()).isEqualTo("blue");
     }
 }

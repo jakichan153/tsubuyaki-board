@@ -80,7 +80,7 @@ class PostControllerTest {
     @DisplayName("投稿一覧_投稿は投稿者内容投稿日の順に表示する")
     void 投稿一覧_投稿は投稿者内容投稿日の順に表示する() throws Exception {
         given(postService.latest()).willReturn(List.of(
-                new Post("alice", "本文がここに表示されます", Instant.parse("2026-06-30T10:15:00Z"))
+                new Post("alice", "本文がここに表示されます", "blue", Instant.parse("2026-06-30T10:15:00Z"))
         ));
 
         mockMvc.perform(get("/posts"))
@@ -93,7 +93,7 @@ class PostControllerTest {
     @Test
     @DisplayName("投稿一覧_各投稿に詳細リンクを表示する")
     void 投稿一覧_各投稿に詳細リンクを表示する() throws Exception {
-        Post post = new Post("alice", "本文がここに表示されます", Instant.parse("2026-06-30T10:15:00Z"));
+        Post post = new Post("alice", "本文がここに表示されます", "blue", Instant.parse("2026-06-30T10:15:00Z"));
         setPostId(post, 1L);
         given(postService.latest()).willReturn(List.of(post));
 
@@ -101,6 +101,20 @@ class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(matchesPattern(
                         "(?s).*<a[^>]*href=\"/posts/1\"[^>]*>詳細</a>.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿一覧_アバター色を表示する")
+    void 投稿一覧_アバター色を表示する() throws Exception {
+        given(postService.latest()).willReturn(List.of(
+                new Post("alice", "本文がここに表示されます", "blue", Instant.parse("2026-06-30T10:15:00Z"))
+        ));
+
+        mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*class=\"post__avatar post__avatar--blue\".*"
                 )));
     }
 
@@ -170,16 +184,30 @@ class PostControllerTest {
     }
 
     @Test
+    @DisplayName("投稿フォーム_GET_posts_new_アバター色選択欄を表示する")
+    void 投稿フォーム_GET_posts_new_アバター色選択欄を表示する() throws Exception {
+        mockMvc.perform(get("/posts/new"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<select[^>]*id=\"avatarColor\"[^>]*name=\"avatarColor\"[^>]*>.*"
+                                + "<option[^>]*value=\"gray\"[^>]*>グレー</option>.*"
+                                + "<option[^>]*value=\"blue\"[^>]*>ブルー</option>.*"
+                                + "<option[^>]*value=\"green\"[^>]*>グリーン</option>.*"
+                )));
+    }
+
+    @Test
     @DisplayName("投稿作成_正常入力_Serviceに登録を依頼し一覧へリダイレクトする")
     void 投稿作成_正常入力_Serviceに登録を依頼し一覧へリダイレクトする() throws Exception {
         mockMvc.perform(post("/posts")
                         .param("author", "alice")
-                        .param("body", "初投稿です"))
+                        .param("body", "初投稿です")
+                        .param("avatarColor", "blue"))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/posts"))
                 .andExpect(header().string("Location", "/posts"));
 
-        verify(postService).create("alice", "初投稿です");
+        verify(postService).create("alice", "初投稿です", "blue");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -201,13 +229,13 @@ class PostControllerTest {
                         "(?s).*<textarea[^>]*id=\"body\"[^>]*>"
                                 + Pattern.quote(body) + "</textarea>.*")));
 
-        verify(postService, never()).create(anyString(), anyString());
+        verify(postService, never()).create(anyString(), anyString(), anyString());
     }
 
     @Test
     @DisplayName("投稿詳細_存在するid_posts_detailを表示し投稿をビューに渡す")
     void 投稿詳細_存在するid_posts_detailを表示し投稿をビューに渡す() throws Exception {
-        Post post = new Post("alice", "詳細本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        Post post = new Post("alice", "詳細本文です", "green", Instant.parse("2026-06-30T10:15:00Z"));
         setPostId(post, 1L);
         given(postService.findById(1L)).willReturn(Optional.of(post));
         given(likeService.countByPostId(1L)).willReturn(3L);
@@ -219,6 +247,9 @@ class PostControllerTest {
                 .andExpect(model().attribute("likeCount", 3L))
                 .andExpect(content().string(matchesPattern(
                         "(?s).*alice.*詳細本文です.*2026-06-30.*いいね数.*3.*"
+                )))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*class=\"post__avatar post__avatar--green\".*"
                 )))
                 .andExpect(content().string(matchesPattern(
                         "(?s).*<form[^>]*action=\"/posts/1/likes\"[^>]*method=\"post\"[^>]*>.*"

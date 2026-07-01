@@ -63,4 +63,15 @@ class PostRepositoryTest {
 
         assertThat(actual).isEmpty();
     }
+
+    @Test
+    @DisplayName("投稿作成_アバター色を保存できる")
+    void 投稿作成_アバター色を保存できる() {
+        Post saved = postRepository.save(new Post(
+                "alice", "本文です", "green", Instant.parse("2026-06-30T10:00:00Z")));
+
+        Post actual = postRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(actual.getAvatarColor()).isEqualTo("green");
+    }
 }
