@@ -8,7 +8,11 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Controller
 public class PostController {
@@ -42,6 +46,10 @@ public class PostController {
         return "redirect:/posts";
     }
 
-    // 演習中に追加するエンドポイント:
-    //   @GetMapping("/posts/{id}")       // 詳細
+    @GetMapping("/posts/{id}")
+    public String detail(@PathVariable Long id, Model model) {
+        model.addAttribute("post", postService.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND)));
+        return "posts/detail";
+    }
 }

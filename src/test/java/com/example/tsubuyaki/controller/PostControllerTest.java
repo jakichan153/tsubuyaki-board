@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -126,6 +127,30 @@ class PostControllerTest {
                                 + Pattern.quote(body) + "</textarea>.*")));
 
         verify(postService, never()).create(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("投稿詳細_存在するid_posts_detailを表示し投稿をビューに渡す")
+    void 投稿詳細_存在するid_posts_detailを表示し投稿をビューに渡す() throws Exception {
+        Post post = new Post("alice", "詳細本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        given(postService.findById(1L)).willReturn(Optional.of(post));
+
+        mockMvc.perform(get("/posts/1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/detail"))
+                .andExpect(model().attribute("post", post))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*alice.*詳細本文です.*2026-06-30.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿詳細_存在しないid_404を返す")
+    void 投稿詳細_存在しないid_404を返す() throws Exception {
+        given(postService.findById(999L)).willReturn(Optional.empty());
+
+        mockMvc.perform(get("/posts/999"))
+                .andExpect(status().isNotFound());
     }
 
     static Stream<Arguments> invalidPostForms() {
