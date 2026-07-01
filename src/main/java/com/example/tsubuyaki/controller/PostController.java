@@ -4,8 +4,8 @@ import com.example.tsubuyaki.service.LikeService;
 import com.example.tsubuyaki.service.PostNotFoundException;
 import com.example.tsubuyaki.service.PostService;
 import com.example.tsubuyaki.web.dto.PostForm;
-import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
@@ -34,9 +35,14 @@ public class PostController {
     }
 
     @GetMapping({ "/", "/posts", "/posts/" })
-    public String list(Model model) {
-        model.addAttribute("posts", postService.latest());
+    public String list(@RequestParam(name = "q", required = false) String q, Model model) {
+        model.addAttribute("posts", hasSearchKeyword(q) ? postService.searchByBody(q) : postService.latest());
+        model.addAttribute("q", q == null ? "" : q);
         return "posts/list";
+    }
+
+    private static boolean hasSearchKeyword(String q) {
+        return q != null && !q.isBlank();
     }
 
     @GetMapping("/posts/new")

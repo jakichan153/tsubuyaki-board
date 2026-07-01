@@ -105,6 +105,61 @@ class PostControllerTest {
     }
 
     @Test
+    @DisplayName("投稿検索_q指定_一致する投稿のみ表示する")
+    void 投稿検索_q指定_一致する投稿のみ表示する() throws Exception {
+        Post post = new Post("alice", "検索できます", Instant.parse("2026-06-30T10:15:00Z"));
+        given(postService.searchByBody("検索")).willReturn(List.of(post));
+
+        mockMvc.perform(get("/posts").param("q", "検索"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/list"))
+                .andExpect(model().attribute("posts", List.of(post)))
+                .andExpect(model().attribute("q", "検索"))
+                .andExpect(content().string(containsString("検索できます")));
+    }
+
+    @Test
+    @DisplayName("投稿検索_q指定_一致しない場合は0件表示する")
+    void 投稿検索_q指定_一致しない場合は0件表示する() throws Exception {
+        given(postService.searchByBody("該当なし")).willReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/posts").param("q", "該当なし"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("posts", Collections.emptyList()))
+                .andExpect(model().attribute("q", "該当なし"))
+                .andExpect(content().string(containsString("まだ投稿はありません")));
+    }
+
+    @Test
+    @DisplayName("投稿検索_q空文字_全件表示する")
+    void 投稿検索_q空文字_全件表示する() throws Exception {
+        List<Post> posts = List.of(
+                new Post("alice", "全件表示されます", Instant.parse("2026-06-30T10:15:00Z"))
+        );
+        given(postService.latest()).willReturn(posts);
+
+        mockMvc.perform(get("/posts").param("q", ""))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("posts", posts))
+                .andExpect(model().attribute("q", ""))
+                .andExpect(content().string(containsString("全件表示されます")));
+    }
+
+    @Test
+    @DisplayName("投稿検索_一覧画面_検索ボックスを表示する")
+    void 投稿検索_一覧画面_検索ボックスを表示する() throws Exception {
+        given(postService.latest()).willReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<form[^>]*action=\"/posts\"[^>]*method=\"get\"[^>]*>.*"
+                                + "<input[^>]*name=\"q\"[^>]*>.*"
+                                + "<button[^>]*type=\"submit\"[^>]*>検索</button>.*"
+                )));
+    }
+
+    @Test
     @DisplayName("投稿フォーム_GET_posts_new_空のフォームをビューに渡す")
     void 投稿フォーム_GET_posts_new_空のフォームをビューに渡す() throws Exception {
         mockMvc.perform(get("/posts/new"))

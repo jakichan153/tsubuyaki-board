@@ -23,6 +23,10 @@ public class PostService {
         return repository.findTop50ByOrderByCreatedAtDesc();
     }
 
+    public List<Post> searchByBody(String keyword) {
+        return repository.findTop50ByBodyContainingOrderByCreatedAtDesc(keyword);
+    }
+
     @Transactional
     public Post create(String author, String body) {
         return repository.save(new Post(author, body, Instant.now()));

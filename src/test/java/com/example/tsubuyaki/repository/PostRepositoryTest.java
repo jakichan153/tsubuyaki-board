@@ -40,4 +40,27 @@ class PostRepositoryTest {
                 .endsWith("author-4", "author-3", "author-2")
                 .doesNotContain("author-1");
     }
+
+    @Test
+    @DisplayName("投稿検索_本文にキーワードを含む投稿のみ新着順で返す")
+    void 投稿検索_本文にキーワードを含む投稿のみ新着順で返す() {
+        postRepository.save(new Post("alice", "検索できます", Instant.parse("2026-06-30T10:00:00Z")));
+        postRepository.save(new Post("bob", "対象外です", Instant.parse("2026-06-30T11:00:00Z")));
+        postRepository.save(new Post("carol", "新しい検索結果", Instant.parse("2026-06-30T12:00:00Z")));
+
+        List<Post> actual = postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("検索");
+
+        assertThat(actual).extracting(Post::getAuthor)
+                .containsExactly("carol", "alice");
+    }
+
+    @Test
+    @DisplayName("投稿検索_一致しない場合_空配列を返す")
+    void 投稿検索_一致しない場合_空配列を返す() {
+        postRepository.save(new Post("alice", "検索できます", Instant.parse("2026-06-30T10:00:00Z")));
+
+        List<Post> actual = postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("該当なし");
+
+        assertThat(actual).isEmpty();
+    }
 }

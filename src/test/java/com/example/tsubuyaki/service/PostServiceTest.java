@@ -43,6 +43,20 @@ class PostServiceTest {
     }
 
     @Test
+    @DisplayName("投稿検索_searchByBody_Repositoryの本文LIKE検索結果を返す")
+    void 投稿検索_searchByBody_Repositoryの本文LIKE検索結果を返す() {
+        List<Post> posts = List.of(
+                new Post("alice", "検索できます", Instant.parse("2026-06-30T10:00:00Z"))
+        );
+        given(postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("検索")).willReturn(posts);
+
+        List<Post> actual = postService.searchByBody("検索");
+
+        assertThat(actual).isSameAs(posts);
+        verify(postRepository).findTop50ByBodyContainingOrderByCreatedAtDesc("検索");
+    }
+
+    @Test
     @DisplayName("投稿作成_create_現在日時を設定してRepositoryに保存する")
     void 投稿作成_create_現在日時を設定してRepositoryに保存する() {
         Instant before = Instant.now();
