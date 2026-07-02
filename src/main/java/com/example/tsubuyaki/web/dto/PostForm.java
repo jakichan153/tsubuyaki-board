@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class PostForm {
 
+    // Form DTOは画面入力値とバリデーションルールをControllerへ渡す。
     @NotBlank(message = "投稿者名を入力してください")
     @Size(max = 30, message = "投稿者名は 30 文字以内で入力してください")
     private String author;
@@ -18,6 +19,7 @@ public class PostForm {
 
     private String avatarColor = Post.DEFAULT_AVATAR_COLOR;
 
+    // 画像は任意入力のため、未添付でも従来の投稿作成を継続できる。
     private MultipartFile image;
 
     public PostForm() {

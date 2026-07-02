@@ -29,6 +29,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Controller
 public class PostController {
 
+    // Controllerは画面入力を受け取り、表示に必要な値をServiceから取得する。
     private final PostService postService;
     private final LikeService likeService;
 
@@ -39,6 +40,7 @@ public class PostController {
 
     @GetMapping({ "/", "/posts", "/posts/" })
     public String list(@RequestParam(name = "q", required = false) String q, Model model) {
+        // キーワードがある場合だけ検索し、通常の一覧表示は最新投稿を取得する。
         model.addAttribute("posts", hasSearchKeyword(q) ? postService.searchByBody(q) : postService.latest());
         model.addAttribute("q", q == null ? "" : q);
         return "posts/list";
@@ -50,6 +52,7 @@ public class PostController {
 
     @GetMapping("/tags/{name}")
     public String listByTag(@PathVariable String name, Model model) {
+        // タグ名に紐づく投稿一覧をServiceへ問い合わせる。
         model.addAttribute("posts", postService.findByTagName(name));
         model.addAttribute("q", "");
         model.addAttribute("tagName", name);
@@ -65,6 +68,7 @@ public class PostController {
     @PostMapping("/posts")
     public String create(@Valid @ModelAttribute("postForm") PostForm postForm,
             BindingResult bindingResult) {
+        // 入力エラー時は投稿作成画面を再表示し、登録処理へ進めない。
         if (bindingResult.hasErrors()) {
             return "posts/form";
         }
@@ -75,11 +79,13 @@ public class PostController {
 
     private void createPost(PostForm postForm) {
         MultipartFile image = postForm.getImage();
+        // 画像未添付の投稿は従来どおり本文だけで登録する。
         if (image == null || image.isEmpty()) {
             postService.create(postForm.getAuthor(), postForm.getBody(), postForm.getAvatarColor());
             return;
         }
         try {
+            // 添付画像は1枚だけServiceへ渡し、保存方式はService/Entity側に任せる。
             postService.create(postForm.getAuthor(), postForm.getBody(), postForm.getAvatarColor(),
                     image.getContentType(), image.getBytes());
         } catch (IOException e) {
@@ -98,6 +104,7 @@ public class PostController {
     @PostMapping("/posts/{id}/likes")
     public String toggleLike(@PathVariable Long id, HttpServletRequest request) {
         try {
+            // 同じ利用者のLikeはService側で追加/解除を切り替える。
             likeService.toggle(id, clientHash(request));
         } catch (PostNotFoundException e) {
             throw new ResponseStatusException(NOT_FOUND, "Post not found", e);
@@ -108,6 +115,7 @@ public class PostController {
     @PostMapping("/posts/{id}/delete")
     public String delete(@PathVariable Long id) {
         try {
+            // 削除操作はServiceへ委譲し、永続化層では論理削除として扱う。
             postService.delete(id);
         } catch (PostNotFoundException e) {
             throw new ResponseStatusException(NOT_FOUND, "Post not found", e);
@@ -118,6 +126,7 @@ public class PostController {
     private static String clientHash(HttpServletRequest request) {
         String source = request.getRemoteAddr() + request.getHeader("User-Agent");
         try {
+            // IPアドレスとUser-Agentを短いハッシュにして、簡易的なLike識別子にする。
             byte[] digest = MessageDigest.getInstance("SHA-256")
                     .digest(source.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest).substring(0, 8);

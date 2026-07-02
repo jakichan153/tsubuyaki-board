@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class LikeService {
 
+    // ServiceはLikeの追加/解除と件数取得の業務処理を担当する。
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
 
@@ -22,6 +23,7 @@ public class LikeService {
     @Transactional
     public void toggle(Long postId, String clientHash) {
         Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        // 既にLike済みなら解除し、未Likeなら新規登録する。
         postLikeRepository.findByPostIdAndClientHash(postId, clientHash)
                 .ifPresentOrElse(postLikeRepository::delete,
                         () -> postLikeRepository.save(new PostLike(post, clientHash)));

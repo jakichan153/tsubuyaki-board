@@ -12,6 +12,7 @@ import java.util.List;
 @RequestMapping("/api/posts")
 public class ApiPostController {
 
+    // REST Controllerは画面ではなくJSONとして投稿一覧を返す。
     private final PostService postService;
 
     public ApiPostController(PostService postService) {
@@ -20,6 +21,7 @@ public class ApiPostController {
 
     @GetMapping
     public List<ApiPostResponse> list() {
+        // APIでもServiceの一覧取得を使い、表示用DTOへ変換する。
         return postService.latest().stream()
                 .map(ApiPostResponse::from)
                 .toList();

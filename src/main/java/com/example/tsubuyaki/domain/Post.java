@@ -86,6 +86,7 @@ public class Post {
     }
 
     public void markDeleted(Instant deletedAt) {
+        // 論理削除は削除日時だけを記録し、投稿データ自体は残す。
         this.deletedAt = deletedAt;
     }
 
@@ -105,11 +106,13 @@ public class Post {
         if (!hasImage()) {
             return "";
         }
+        // Thymeleafから直接表示できるdata URIへ変換する。
         return "data:" + imageContentType + ";base64,"
                 + Base64.getEncoder().encodeToString(imageData);
     }
 
     public void attachImage(String imageContentType, byte[] imageData) {
+        // 添付画像は投稿1件につき1枚だけ保持する。
         this.imageContentType = imageContentType;
         this.imageData = imageData == null ? null : imageData.clone();
     }

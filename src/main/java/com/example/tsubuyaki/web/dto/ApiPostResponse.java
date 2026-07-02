@@ -11,6 +11,7 @@ public record ApiPostResponse(
         String avatarColor,
         Instant createdAt) {
 
+    // REST APIでは画面用Entityを必要なJSON項目だけのDTOへ変換する。
     public static ApiPostResponse from(Post post) {
         return new ApiPostResponse(
                 post.getId(),

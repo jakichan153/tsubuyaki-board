@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class OpenApiController {
 
+    // 簡易OpenAPIドキュメントを静的リソースとして公開する。
     @GetMapping(value = "/openapi.yaml", produces = "application/yaml")
     public Resource openApi() {
         return new ClassPathResource("static/openapi.yaml");
