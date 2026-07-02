@@ -1,6 +1,8 @@
 package com.example.tsubuyaki.repository;
 
 import com.example.tsubuyaki.domain.Post;
+import com.example.tsubuyaki.domain.PostTag;
+import com.example.tsubuyaki.domain.Tag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,12 @@ class PostRepositoryTest {
 
     @Autowired
     private PostRepository postRepository;
+
+    @Autowired
+    private TagRepository tagRepository;
+
+    @Autowired
+    private PostTagRepository postTagRepository;
 
     @Test
     @DisplayName("投稿一覧_51件以上あるとき_新着50件だけを新着順で返す")
@@ -99,5 +107,26 @@ class PostRepositoryTest {
 
         assertThat(actual).extracting(Post::getAuthor)
                 .containsExactly("bob", "alice");
+    }
+
+    @Test
+    @DisplayName("タグ一覧_指定タグに紐づく投稿のみ新着順で返す")
+    void タグ一覧_指定タグに紐づく投稿のみ新着順で返す() {
+        Post javaOld = postRepository.save(new Post(
+                "alice", "#java 古い投稿", Instant.parse("2026-06-30T09:00:00Z")));
+        Post spring = postRepository.save(new Post(
+                "bob", "#spring の投稿", Instant.parse("2026-06-30T10:00:00Z")));
+        Post javaNew = postRepository.save(new Post(
+                "carol", "#java 新しい投稿", Instant.parse("2026-06-30T11:00:00Z")));
+        Tag java = tagRepository.save(new Tag("java"));
+        Tag springTag = tagRepository.save(new Tag("spring"));
+        postTagRepository.save(new PostTag(javaOld, java));
+        postTagRepository.save(new PostTag(spring, springTag));
+        postTagRepository.save(new PostTag(javaNew, java));
+
+        List<Post> actual = postRepository.findByTagNameOrderByCreatedAtDesc("java");
+
+        assertThat(actual).extracting(Post::getAuthor)
+                .containsExactly("carol", "alice");
     }
 }

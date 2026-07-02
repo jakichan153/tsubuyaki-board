@@ -174,6 +174,33 @@ class PostControllerTest {
     }
 
     @Test
+    @DisplayName("タグ一覧_GET_tags_name_対象タグの投稿のみ表示する")
+    void タグ一覧_GET_tags_name_対象タグの投稿のみ表示する() throws Exception {
+        Post tagged = new Post("alice", "#java の投稿です", Instant.parse("2026-06-30T10:15:00Z"));
+        given(postService.findByTagName("java")).willReturn(List.of(tagged));
+
+        mockMvc.perform(get("/tags/java"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/list"))
+                .andExpect(model().attribute("posts", List.of(tagged)))
+                .andExpect(model().attribute("tagName", "java"))
+                .andExpect(content().string(containsString("#java の投稿です")));
+    }
+
+    @Test
+    @DisplayName("タグ一覧_GET_tags_name_存在しないタグでは空の一覧を表示する")
+    void タグ一覧_GET_tags_name_存在しないタグでは空の一覧を表示する() throws Exception {
+        given(postService.findByTagName("unknown")).willReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/tags/unknown"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/list"))
+                .andExpect(model().attribute("posts", Collections.emptyList()))
+                .andExpect(model().attribute("tagName", "unknown"))
+                .andExpect(content().string(containsString("まだ投稿はありません")));
+    }
+
+    @Test
     @DisplayName("投稿フォーム_GET_posts_new_空のフォームをビューに渡す")
     void 投稿フォーム_GET_posts_new_空のフォームをビューに渡す() throws Exception {
         mockMvc.perform(get("/posts/new"))

@@ -1,7 +1,11 @@
 package com.example.tsubuyaki.service;
 
 import com.example.tsubuyaki.domain.Post;
+import com.example.tsubuyaki.domain.PostTag;
+import com.example.tsubuyaki.domain.Tag;
+import com.example.tsubuyaki.repository.PostTagRepository;
 import com.example.tsubuyaki.repository.PostRepository;
+import com.example.tsubuyaki.repository.TagRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +19,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,6 +30,12 @@ class PostServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    @Mock
+    private TagRepository tagRepository;
+
+    @Mock
+    private PostTagRepository postTagRepository;
 
     @InjectMocks
     private PostService postService;
@@ -61,6 +74,7 @@ class PostServiceTest {
     @DisplayName("投稿作成_create_現在日時を設定してRepositoryに保存する")
     void 投稿作成_create_現在日時を設定してRepositoryに保存する() {
         Instant before = Instant.now();
+        given(postRepository.save(any(Post.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         postService.create("alice", "初投稿です", "blue");
 
@@ -72,6 +86,51 @@ class PostServiceTest {
         assertThat(saved.getBody()).isEqualTo("初投稿です");
         assertThat(saved.getAvatarColor()).isEqualTo("blue");
         assertThat(saved.getCreatedAt()).isBetween(before, after);
+    }
+
+    @Test
+    @DisplayName("投稿作成_本文中のタグを抽出して保存する")
+    void 投稿作成_本文中のタグを抽出して保存する() {
+        given(postRepository.save(any(Post.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(tagRepository.findByName("java")).willReturn(Optional.empty());
+        given(tagRepository.save(any(Tag.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        postService.create("alice", "今日は #java を学びました", "blue");
+
+        ArgumentCaptor<Tag> tagCaptor = ArgumentCaptor.forClass(Tag.class);
+        verify(tagRepository).save(tagCaptor.capture());
+        assertThat(tagCaptor.getValue().getName()).isEqualTo("java");
+        ArgumentCaptor<PostTag> postTagCaptor = ArgumentCaptor.forClass(PostTag.class);
+        verify(postTagRepository).save(postTagCaptor.capture());
+        assertThat(postTagCaptor.getValue().getTag().getName()).isEqualTo("java");
+    }
+
+    @Test
+    @DisplayName("投稿作成_複数タグをすべて保存する")
+    void 投稿作成_複数タグをすべて保存する() {
+        given(postRepository.save(any(Post.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(tagRepository.findByName("java")).willReturn(Optional.empty());
+        given(tagRepository.findByName("spring")).willReturn(Optional.empty());
+        given(tagRepository.save(any(Tag.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        postService.create("alice", "#java と #spring を使います", "blue");
+
+        ArgumentCaptor<Tag> tagCaptor = ArgumentCaptor.forClass(Tag.class);
+        verify(tagRepository, times(2)).save(tagCaptor.capture());
+        assertThat(tagCaptor.getAllValues()).extracting(Tag::getName)
+                .containsExactly("java", "spring");
+        verify(postTagRepository, times(2)).save(any(PostTag.class));
+    }
+
+    @Test
+    @DisplayName("投稿作成_タグを含まない投稿でも正常に登録できる")
+    void 投稿作成_タグを含まない投稿でも正常に登録できる() {
+        given(postRepository.save(any(Post.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        postService.create("alice", "タグなし本文です", "blue");
+
+        verify(tagRepository, never()).save(any(Tag.class));
+        verify(postTagRepository, never()).save(any(PostTag.class));
     }
 
     @Test
