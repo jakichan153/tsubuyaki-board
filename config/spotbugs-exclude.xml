@@ -17,6 +17,7 @@
     <Match>
         <Or>
             <Class name="~.*\.domain\..*"/>
+            <Class name="~.*\.controller\..*"/>
             <Class name="~.*\.dto\..*"/>
             <Class name="~.*\.web\.dto\..*"/>
         </Or>
