@@ -1,8 +1,11 @@
 package com.example.tsubuyaki.controller;
 
 import com.example.tsubuyaki.domain.Post;
+import com.example.tsubuyaki.domain.PostComment;
+import com.example.tsubuyaki.service.CommentService;
 import com.example.tsubuyaki.service.LikeService;
 import com.example.tsubuyaki.service.PostService;
+import com.example.tsubuyaki.web.dto.CommentForm;
 import com.example.tsubuyaki.web.dto.PostForm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,7 @@ import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -55,6 +59,9 @@ class PostControllerTest {
 
     @MockitoBean
     private LikeService likeService;
+
+    @MockitoBean
+    private CommentService commentService;
 
     @Test
     @DisplayName("投稿一覧_0件の場合_まだ投稿はありませんを表示する")
@@ -107,6 +114,38 @@ class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(matchesPattern(
                         "(?s).*<a[^>]*href=\"/posts/1\"[^>]*>詳細</a>.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿一覧_各投稿にいいね数を表示する")
+    void 投稿一覧_各投稿にいいね数を表示する() throws Exception {
+        Post post = new Post("alice", "本文がここに表示されます", "blue", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
+        given(postService.latest()).willReturn(List.of(post));
+        given(likeService.countByPostId(1L)).willReturn(3L);
+
+        mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("likeCounts", Map.of(1L, 3L)))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<span[^>]*class=\"post__like-count\"[^>]*>♡3</span>.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿一覧_各投稿にコメント数を表示する")
+    void 投稿一覧_各投稿にコメント数を表示する() throws Exception {
+        Post post = new Post("alice", "本文がここに表示されます", "blue", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
+        given(postService.latest()).willReturn(List.of(post));
+        given(commentService.countByPostId(1L)).willReturn(3L);
+
+        mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("commentCounts", Map.of(1L, 3L)))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<span[^>]*class=\"post__comment-count\"[^>]*>💬3</span>.*"
                 )));
     }
 
@@ -344,21 +383,81 @@ class PostControllerTest {
         setPostId(post, 1L);
         given(postService.findById(1L)).willReturn(Optional.of(post));
         given(likeService.countByPostId(1L)).willReturn(3L);
+        given(likeService.isLiked(1L, "e97515d4")).willReturn(false);
+        given(commentService.latestByPostId(1L)).willReturn(Collections.emptyList());
+        given(commentService.countByPostId(1L)).willReturn(0L);
 
-        mockMvc.perform(get("/posts/1"))
+        mockMvc.perform(get("/posts/1")
+                        .header("User-Agent", "JUnit")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }))
                 .andExpect(status().isOk())
                 .andExpect(view().name("posts/detail"))
                 .andExpect(model().attribute("post", post))
                 .andExpect(model().attribute("likeCount", 3L))
+                .andExpect(model().attribute("liked", false))
+                .andExpect(model().attribute("commentForm", instanceOf(CommentForm.class)))
+                .andExpect(model().attribute("comments", Collections.emptyList()))
+                .andExpect(model().attribute("commentCount", 0L))
                 .andExpect(content().string(matchesPattern(
-                        "(?s).*alice.*詳細本文です.*2026-06-30.*いいね数.*3.*"
+                        "(?s).*alice.*詳細本文です.*2026-06-30.*"
                 )))
                 .andExpect(content().string(matchesPattern(
                         "(?s).*class=\"post__avatar post__avatar--green\".*"
                 )))
                 .andExpect(content().string(matchesPattern(
                         "(?s).*<form[^>]*action=\"/posts/1/likes\"[^>]*method=\"post\"[^>]*>.*"
-                                + "<button[^>]*type=\"submit\"[^>]*>Like</button>.*"
+                                + "<button[^>]*class=\"like-button\"[^>]*type=\"submit\"[^>]*>.*♡3.*</button>.*"
+                )))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<form[^>]*action=\"/posts/1/comments\"[^>]*method=\"post\"[^>]*>.*"
+                                + "<input[^>]*id=\"commentAuthor\"[^>]*name=\"author\"[^>]*>.*"
+                                + "<textarea[^>]*id=\"commentBody\"[^>]*name=\"body\"[^>]*>.*</textarea>.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿詳細_いいね済みの場合_赤いハートといいね数を表示する")
+    void 投稿詳細_いいね済みの場合_赤いハートといいね数を表示する() throws Exception {
+        Post post = new Post("alice", "詳細本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
+        given(postService.findById(1L)).willReturn(Optional.of(post));
+        given(likeService.countByPostId(1L)).willReturn(3L);
+        given(likeService.isLiked(1L, "e97515d4")).willReturn(true);
+
+        mockMvc.perform(get("/posts/1")
+                        .header("User-Agent", "JUnit")
+                        .with(request -> {
+                            request.setRemoteAddr("192.0.2.10");
+                            return request;
+                        }))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("liked", true))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<button[^>]*class=\"like-button like-button--liked\"[^>]*type=\"submit\"[^>]*>.*♥3.*"
+                                + "</button>.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿詳細_コメント一覧を新しい順に表示しコメント数を表示する")
+    void 投稿詳細_コメント一覧を新しい順に表示しコメント数を表示する() throws Exception {
+        Post post = new Post("alice", "詳細本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
+        PostComment newer = new PostComment(post, "bob", "新しいコメント", Instant.parse("2026-06-30T12:00:00Z"));
+        PostComment older = new PostComment(post, "carol", "古いコメント", Instant.parse("2026-06-30T11:00:00Z"));
+        given(postService.findById(1L)).willReturn(Optional.of(post));
+        given(commentService.latestByPostId(1L)).willReturn(List.of(newer, older));
+        given(commentService.countByPostId(1L)).willReturn(2L);
+
+        mockMvc.perform(get("/posts/1"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("comments", List.of(newer, older)))
+                .andExpect(model().attribute("commentCount", 2L))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*💬2.*bob.*2026-06-30.*新しいコメント.*carol.*2026-06-30.*古いコメント.*"
                 )));
     }
 
@@ -399,6 +498,58 @@ class PostControllerTest {
 
         mockMvc.perform(get("/posts/999"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("コメント投稿_正常入力_Serviceに登録を依頼し詳細へリダイレクトする")
+    void コメント投稿_正常入力_Serviceに登録を依頼し詳細へリダイレクトする() throws Exception {
+        mockMvc.perform(post("/posts/1/comments")
+                        .param("author", "bob")
+                        .param("body", "コメントです"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts/1"));
+
+        verify(commentService).create(1L, "bob", "コメントです");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidCommentForms")
+    @DisplayName("コメント投稿_入力不正_詳細画面を再表示し入力値とエラーメッセージを保持する")
+    void コメント投稿_入力不正_詳細画面を再表示し入力値とエラーメッセージを保持する(
+            String caseName, String author, String body, String expectedMessage) throws Exception {
+        Post post = new Post("alice", "詳細本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
+        given(postService.findById(1L)).willReturn(Optional.of(post));
+        given(commentService.latestByPostId(1L)).willReturn(Collections.emptyList());
+
+        mockMvc.perform(post("/posts/1/comments")
+                        .param("author", author)
+                        .param("body", body))
+                .andExpect(status().isOk())
+                .andExpect(view().name("posts/detail"))
+                .andExpect(model().attributeHasErrors("commentForm"))
+                .andExpect(content().string(containsString(expectedMessage)))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<input[^>]*id=\"commentAuthor\"[^>]*value=\""
+                                + Pattern.quote(author) + "\"[^>]*>.*")))
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<textarea[^>]*id=\"commentBody\"[^>]*>"
+                                + Pattern.quote(body) + "</textarea>.*")));
+
+        verify(commentService, never()).create(eq(1L), anyString(), anyString());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("validCommentForms")
+    @DisplayName("コメント投稿_境界値入力_登録できる")
+    void コメント投稿_境界値入力_登録できる(String caseName, String author, String body) throws Exception {
+        mockMvc.perform(post("/posts/1/comments")
+                        .param("author", author)
+                        .param("body", body))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts/1"));
+
+        verify(commentService).create(1L, author, body);
     }
 
     @Test
@@ -460,6 +611,33 @@ class PostControllerTest {
                         "body280文字超過", validAuthor, "あ".repeat(281), "本文は 280 文字以内で入力してください"),
                 Arguments.of(
                         "body空白のみ", validAuthor, "   ", "本文を入力してください")
+        );
+    }
+
+    static Stream<Arguments> invalidCommentForms() {
+        String validAuthor = "bob";
+        String validBody = "コメントです";
+        return Stream.of(
+                Arguments.of(
+                        "author必須", "", validBody, "投稿者名を入力してください"),
+                Arguments.of(
+                        "author30文字超過", "あ".repeat(31), validBody, "投稿者名は 30 文字以内で入力してください"),
+                Arguments.of(
+                        "author空白のみ", "   ", validBody, "投稿者名を入力してください"),
+                Arguments.of(
+                        "body必須", validAuthor, "", "コメントを入力してください"),
+                Arguments.of(
+                        "body280文字超過", validAuthor, "あ".repeat(281), "コメントは 280 文字以内で入力してください"),
+                Arguments.of(
+                        "body空白のみ", validAuthor, "   ", "コメントを入力してください")
+        );
+    }
+
+    static Stream<Arguments> validCommentForms() {
+        return Stream.of(
+                Arguments.of("author/bodyが1文字", "a", "b"),
+                Arguments.of("authorが30文字", "あ".repeat(30), "コメントです"),
+                Arguments.of("bodyが280文字", "bob", "あ".repeat(280))
         );
     }
 

@@ -32,4 +32,8 @@ public class LikeService {
     public long countByPostId(Long postId) {
         return postLikeRepository.countByPostId(postId);
     }
+
+    public boolean isLiked(Long postId, String clientHash) {
+        return postLikeRepository.findByPostIdAndClientHash(postId, clientHash).isPresent();
+    }
 }

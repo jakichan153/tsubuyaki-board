@@ -1,10 +1,10 @@
 /* 最小スタイル — 受講生が必要に応じて拡張する */
 :root {
-    --color-bg: #fafafa;
-    --color-text: #222;
-    --color-accent: #1d4ed8;
-    --color-border: #e5e7eb;
-    --color-muted: #6b7280;
+    --color-bg: #f7f7f7;
+    --color-text: #111;
+    --color-accent: #111;
+    --color-border: #e7e7e7;
+    --color-muted: #777;
 }
 
 * {
@@ -21,14 +21,84 @@ body {
 }
 
 main {
-    max-width: 720px;
-    margin: 2rem auto;
-    padding: 0 1rem;
+    background: white;
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    max-width: 640px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 1.25rem 1.25rem 2rem;
 }
 
 h1 {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+    letter-spacing: 0;
     margin-bottom: 1rem;
+    text-align: center;
+}
+
+nav {
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin: 0 -1.25rem 1rem;
+    padding: 0 1.25rem 1rem;
+}
+
+nav a {
+    border-radius: 999px;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    text-decoration: none;
+}
+
+nav a:hover {
+    background: #f1f1f1;
+}
+
+form[method="get"] {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+form[method="get"] label {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+form[method="get"] input[type="search"] {
+    background: #f4f4f4;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--color-text);
+    flex: 1;
+    font: inherit;
+    min-width: 0;
+    padding: 0.55rem 0.9rem;
+}
+
+form[method="get"] input[type="search"]:focus {
+    background: white;
+    border-color: #cfcfcf;
+    outline: none;
+}
+
+form[method="get"] button {
+    background: #111;
+    border: 1px solid #111;
+    border-radius: 999px;
+    color: white;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    padding: 0.45rem 0.9rem;
 }
 
 .refresh-form {
@@ -36,21 +106,21 @@ h1 {
 }
 
 .refresh-form button {
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
     background: white;
+    border: 1px solid var(--color-border);
     color: var(--color-text);
-    cursor: pointer;
-    font: inherit;
-    padding: 0.35rem 0.8rem;
+    padding: 0.4rem 0.85rem;
 }
 
 .post {
-    padding: 1rem;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    border-top: 0;
     background: white;
+    margin: 0 -1.25rem;
+    padding: 1rem 1.25rem;
 }
 
 .post__author {
@@ -61,29 +131,40 @@ h1 {
 .post__created-at {
     color: var(--color-muted);
     font-size: 0.85rem;
+    margin-right: auto;
 }
 
 .post__footer {
     align-items: center;
     display: flex;
     gap: 1rem;
-    justify-content: space-between;
 }
 
 .post__detail-link {
     color: var(--color-accent);
     font-size: 0.9rem;
+    margin-left: 3em;
+}
+
+.post__like-count {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.post__comment-count {
+    color: var(--color-muted);
+    font-size: 0.9rem;
 }
 
 .post__body {
-    margin-top: 0.5rem;
+    margin: 0.5rem 0 0;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: normal;
 }
 
 .post__image {
-    border-radius: 8px;
+    border-radius: 12px;
     display: block;
     height: auto;
     margin: 0.75rem 0;
@@ -91,12 +172,13 @@ h1 {
 }
 
 .post__avatar {
+    border: 2px solid white;
     border-radius: 999px;
     display: inline-block;
-    height: 1rem;
+    height: 1.25rem;
     margin-right: 0.5rem;
     vertical-align: -0.1rem;
-    width: 1rem;
+    width: 1.25rem;
 }
 
 .post__avatar--gray {
@@ -129,7 +211,7 @@ form[method="post"] input,
 form[method="post"] select,
 form[method="post"] textarea {
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: 12px;
     color: var(--color-text);
     display: block;
     font: inherit;
@@ -144,11 +226,86 @@ form[method="post"] textarea {
 form[method="post"] button {
     background: var(--color-accent);
     border: 1px solid var(--color-accent);
-    border-radius: 8px;
+    border-radius: 999px;
     color: white;
     cursor: pointer;
     font: inherit;
+    font-weight: 600;
     padding: 0.45rem 1rem;
+}
+
+.like-panel {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.like-panel form {
+    margin-top: 0;
+}
+
+.like-panel .like-button {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    color: var(--color-text);
+    font-size: 1rem;
+    min-width: 4rem;
+    padding: 0.45rem 1rem;
+}
+
+.like-panel .like-button--liked {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+.comment-count {
+    color: var(--color-muted);
+    font-size: 0.95rem;
+}
+
+.comment-form-panel {
+    border-bottom: 1px solid var(--color-border);
+    margin: 1rem -1.25rem 0;
+    padding: 0 1.25rem 1rem;
+}
+
+.comments {
+    margin: 0 -1.25rem;
+}
+
+.comments h2 {
+    font-size: 1rem;
+    margin: 0;
+    padding: 1rem 1.25rem 0.5rem;
+}
+
+.comments__empty {
+    color: var(--color-muted);
+    margin: 0;
+    padding: 0 1.25rem 1rem;
+}
+
+.comment {
+    border-top: 1px solid var(--color-border);
+    padding: 1rem 1.25rem;
+}
+
+.comment__author {
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+.comment__created-at {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+.comment__body {
+    margin: 0.5rem 0 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
 }
 
 .post__delete-form {

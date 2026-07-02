@@ -76,6 +76,30 @@ class LikeServiceTest {
     }
 
     @Test
+    @DisplayName("いいね状態_isLiked_同一clientHashのLikeがあればtrueを返す")
+    void いいね状態_isLiked_同一clientHashのLikeがあればtrueを返す() {
+        Post post = new Post("alice", "本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        PostLike existing = new PostLike(post, "client001");
+        given(postLikeRepository.findByPostIdAndClientHash(1L, "client001")).willReturn(Optional.of(existing));
+
+        boolean actual = likeService.isLiked(1L, "client001");
+
+        assertThat(actual).isTrue();
+        verify(postLikeRepository).findByPostIdAndClientHash(1L, "client001");
+    }
+
+    @Test
+    @DisplayName("いいね状態_isLiked_同一clientHashのLikeがなければfalseを返す")
+    void いいね状態_isLiked_同一clientHashのLikeがなければfalseを返す() {
+        given(postLikeRepository.findByPostIdAndClientHash(1L, "client001")).willReturn(Optional.empty());
+
+        boolean actual = likeService.isLiked(1L, "client001");
+
+        assertThat(actual).isFalse();
+        verify(postLikeRepository).findByPostIdAndClientHash(1L, "client001");
+    }
+
+    @Test
     @DisplayName("いいね_存在しない投稿id_PostNotFoundExceptionを投げる")
     void いいね_存在しない投稿id_PostNotFoundExceptionを投げる() {
         given(postRepository.findById(999L)).willReturn(Optional.empty());

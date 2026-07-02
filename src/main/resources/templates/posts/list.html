@@ -42,6 +42,12 @@
                 <time class="post__created-at"
                       th:datetime="${post.createdAt}"
                       th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2026-05-23 09:00</time>
+                <span class="post__like-count"
+                      th:with="likeCount=${post.id == null ? 0 : likeCounts.get(post.id)}"
+                      th:text="${'♡' + (likeCount == null ? 0 : likeCount)}">♡0</span>
+                <span class="post__comment-count"
+                      th:with="commentCount=${post.id == null ? 0 : commentCounts.get(post.id)}"
+                      th:text="${'💬' + (commentCount == null ? 0 : commentCount)}">💬0</span>
                 <a class="post__detail-link" th:href="@{/posts/{id}(id=${post.id})}">詳細</a>
             </footer>
         </article>

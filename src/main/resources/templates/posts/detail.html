@@ -35,13 +35,43 @@
         </footer>
     </article>
     <section class="like-panel">
-        <p>
-            いいね数
-            <span th:text="${likeCount}">0</span>
-        </p>
         <form th:action="@{/posts/{id}/likes(id=${post.id})}" method="post">
-            <button type="submit">Like</button>
+            <button class="like-button"
+                    th:classappend="${liked} ? 'like-button--liked' : ''"
+                    type="submit"
+                    th:text="${(liked ? '♥' : '♡') + likeCount}">♡0</button>
         </form>
+        <span class="comment-count" th:text="${'💬' + commentCount}">💬0</span>
+    </section>
+
+    <section class="comment-form-panel">
+        <form th:action="@{/posts/{id}/comments(id=${post.id})}" th:object="${commentForm}" method="post">
+            <div>
+                <label for="commentAuthor">投稿者</label>
+                <input type="text" id="commentAuthor" th:field="*{author}" maxlength="30">
+                <p class="error" th:if="${#fields.hasErrors('author')}" th:errors="*{author}">エラー</p>
+            </div>
+            <div>
+                <label for="commentBody">コメント</label>
+                <textarea id="commentBody" th:field="*{body}" maxlength="280" rows="3"></textarea>
+                <p class="error" th:if="${#fields.hasErrors('body')}" th:errors="*{body}">エラー</p>
+            </div>
+            <button type="submit">コメント</button>
+        </form>
+    </section>
+
+    <section class="comments">
+        <h2>コメント</h2>
+        <p class="comments__empty" th:if="${#lists.isEmpty(comments)}">まだコメントはありません</p>
+        <article class="comment" th:each="comment : ${comments}">
+            <header>
+                <span class="comment__author" th:text="${comment.author}">投稿者</span>
+                <time class="comment__created-at"
+                      th:datetime="${comment.createdAt}"
+                      th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">2026-05-23 09:00</time>
+            </header>
+            <p class="comment__body" th:text="${comment.body}">コメント本文</p>
+        </article>
     </section>
 </main>
 </body>
