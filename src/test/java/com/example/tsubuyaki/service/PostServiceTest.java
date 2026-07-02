@@ -86,6 +86,23 @@ class PostServiceTest {
         assertThat(saved.getBody()).isEqualTo("初投稿です");
         assertThat(saved.getAvatarColor()).isEqualTo("blue");
         assertThat(saved.getCreatedAt()).isBetween(before, after);
+        assertThat(saved.hasImage()).isFalse();
+    }
+
+    @Test
+    @DisplayName("投稿作成_画像付き投稿を登録できる")
+    void 投稿作成_画像付き投稿を登録できる() {
+        byte[] imageData = new byte[] {1, 2, 3};
+        given(postRepository.save(any(Post.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        postService.create("alice", "画像付きです", "blue", "image/png", imageData);
+
+        ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(captor.capture());
+        Post saved = captor.getValue();
+        assertThat(saved.getImageContentType()).isEqualTo("image/png");
+        assertThat(saved.getImageData()).containsExactly(imageData);
+        assertThat(saved.hasImage()).isTrue();
     }
 
     @Test

@@ -84,6 +84,20 @@ class PostRepositoryTest {
     }
 
     @Test
+    @DisplayName("投稿作成_添付画像を保存できる")
+    void 投稿作成_添付画像を保存できる() {
+        Post post = new Post("alice", "画像付き本文です", Instant.parse("2026-06-30T10:00:00Z"));
+        post.attachImage("image/png", new byte[] {1, 2, 3});
+        Post saved = postRepository.save(post);
+
+        Post actual = postRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(actual.getImageContentType()).isEqualTo("image/png");
+        assertThat(actual.getImageData()).containsExactly(1, 2, 3);
+        assertThat(actual.hasImage()).isTrue();
+    }
+
+    @Test
     @DisplayName("投稿一覧_論理削除済み投稿は表示しない")
     void 投稿一覧_論理削除済み投稿は表示しない() {
         Post deleted = new Post("alice", "削除済みです", Instant.parse("2026-06-30T10:00:00Z"));

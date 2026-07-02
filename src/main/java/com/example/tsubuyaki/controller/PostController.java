@@ -15,12 +15,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Controller
@@ -66,8 +69,22 @@ public class PostController {
             return "posts/form";
         }
 
-        postService.create(postForm.getAuthor(), postForm.getBody(), postForm.getAvatarColor());
+        createPost(postForm);
         return "redirect:/posts";
+    }
+
+    private void createPost(PostForm postForm) {
+        MultipartFile image = postForm.getImage();
+        if (image == null || image.isEmpty()) {
+            postService.create(postForm.getAuthor(), postForm.getBody(), postForm.getAvatarColor());
+            return;
+        }
+        try {
+            postService.create(postForm.getAuthor(), postForm.getBody(), postForm.getAvatarColor(),
+                    image.getContentType(), image.getBytes());
+        } catch (IOException e) {
+            throw new ResponseStatusException(BAD_REQUEST, "Image upload failed", e);
+        }
     }
 
     @GetMapping("/posts/{id}")

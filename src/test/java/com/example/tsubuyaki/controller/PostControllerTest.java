@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,12 +26,16 @@ import java.util.stream.Stream;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.not;
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -115,6 +120,22 @@ class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(matchesPattern(
                         "(?s).*class=\"post__avatar post__avatar--blue\".*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿一覧_画像付き投稿は添付画像を表示する")
+    void 投稿一覧_画像付き投稿は添付画像を表示する() throws Exception {
+        Post post = new Post("alice", "画像付き本文です", Instant.parse("2026-06-30T10:15:00Z"));
+        post.attachImage("image/png", new byte[] {1, 2, 3});
+        given(postService.latest()).willReturn(List.of(post));
+
+        mockMvc.perform(get("/posts"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<img[^>]*class=\"post__image\"[^>]*"
+                                + "src=\"data:image/png;base64,AQID\"[^>]*"
+                                + "alt=\"添付画像\"[^>]*>.*"
                 )));
     }
 
@@ -224,6 +245,18 @@ class PostControllerTest {
     }
 
     @Test
+    @DisplayName("投稿フォーム_GET_posts_new_画像添付欄を表示する")
+    void 投稿フォーム_GET_posts_new_画像添付欄を表示する() throws Exception {
+        mockMvc.perform(get("/posts/new"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<form[^>]*enctype=\"multipart/form-data\"[^>]*>.*"
+                                + "<input[^>]*type=\"file\"[^>]*id=\"image\"[^>]*"
+                                + "name=\"image\"[^>]*accept=\"image/\\*\"[^>]*>.*"
+                )));
+    }
+
+    @Test
     @DisplayName("投稿作成_正常入力_Serviceに登録を依頼し一覧へリダイレクトする")
     void 投稿作成_正常入力_Serviceに登録を依頼し一覧へリダイレクトする() throws Exception {
         mockMvc.perform(post("/posts")
@@ -235,6 +268,24 @@ class PostControllerTest {
                 .andExpect(header().string("Location", "/posts"));
 
         verify(postService).create("alice", "初投稿です", "blue");
+    }
+
+    @Test
+    @DisplayName("投稿作成_画像付き投稿_Serviceに画像付き登録を依頼し一覧へリダイレクトする")
+    void 投稿作成_画像付き投稿_Serviceに画像付き登録を依頼し一覧へリダイレクトする() throws Exception {
+        MockMultipartFile image = new MockMultipartFile(
+                "image", "sample.png", "image/png", new byte[] {1, 2, 3});
+
+        mockMvc.perform(multipart("/posts")
+                        .file(image)
+                        .param("author", "alice")
+                        .param("body", "画像付きです")
+                        .param("avatarColor", "blue"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts"));
+
+        verify(postService).create(
+                eq("alice"), eq("画像付きです"), eq("blue"), eq("image/png"), aryEq(new byte[] {1, 2, 3}));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -282,6 +333,36 @@ class PostControllerTest {
                         "(?s).*<form[^>]*action=\"/posts/1/likes\"[^>]*method=\"post\"[^>]*>.*"
                                 + "<button[^>]*type=\"submit\"[^>]*>Like</button>.*"
                 )));
+    }
+
+    @Test
+    @DisplayName("投稿詳細_画像付き投稿は添付画像を表示する")
+    void 投稿詳細_画像付き投稿は添付画像を表示する() throws Exception {
+        Post post = new Post("alice", "画像付き詳細です", Instant.parse("2026-06-30T10:15:00Z"));
+        post.attachImage("image/png", new byte[] {1, 2, 3});
+        setPostId(post, 1L);
+        given(postService.findById(1L)).willReturn(Optional.of(post));
+
+        mockMvc.perform(get("/posts/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<img[^>]*class=\"post__image\"[^>]*"
+                                + "src=\"data:image/png;base64,AQID\"[^>]*"
+                                + "alt=\"添付画像\"[^>]*>.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿詳細_画像未添付時も画像タグを表示しない")
+    void 投稿詳細_画像未添付時も画像タグを表示しない() throws Exception {
+        Post post = new Post("alice", "画像なし詳細です", Instant.parse("2026-06-30T10:15:00Z"));
+        setPostId(post, 1L);
+        given(postService.findById(1L)).willReturn(Optional.of(post));
+
+        mockMvc.perform(get("/posts/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("post__image"))))
+                .andExpect(content().string(containsString("画像なし詳細です")));
     }
 
     @Test

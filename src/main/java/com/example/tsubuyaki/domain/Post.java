@@ -5,10 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Objects;
 
 @Entity
@@ -36,6 +38,13 @@ public class Post {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @Column(name = "image_content_type", length = 100)
+    private String imageContentType;
+
+    @Lob
+    @Column(name = "image_data")
+    private byte[] imageData;
 
     protected Post() {
         // JPA
@@ -78,6 +87,31 @@ public class Post {
 
     public void markDeleted(Instant deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public String getImageContentType() {
+        return imageContentType;
+    }
+
+    public byte[] getImageData() {
+        return imageData == null ? null : imageData.clone();
+    }
+
+    public boolean hasImage() {
+        return imageContentType != null && imageData != null && imageData.length > 0;
+    }
+
+    public String getImageDataUri() {
+        if (!hasImage()) {
+            return "";
+        }
+        return "data:" + imageContentType + ";base64,"
+                + Base64.getEncoder().encodeToString(imageData);
+    }
+
+    public void attachImage(String imageContentType, byte[] imageData) {
+        this.imageContentType = imageContentType;
+        this.imageData = imageData == null ? null : imageData.clone();
     }
 
     @Override

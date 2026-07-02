@@ -13,7 +13,7 @@
         <a th:href="@{/posts}">一覧に戻る</a>
     </nav>
 
-    <form th:action="@{/posts}" th:object="${postForm}" method="post">
+    <form th:action="@{/posts}" th:object="${postForm}" method="post" enctype="multipart/form-data">
         <div>
             <label for="avatarColor">アバター色</label>
             <select id="avatarColor" th:field="*{avatarColor}">
@@ -31,6 +31,10 @@
             <label for="body">本文 (280 文字まで)</label>
             <textarea id="body" th:field="*{body}" maxlength="280" rows="4" required></textarea>
             <p class="error" th:if="${#fields.hasErrors('body')}" th:errors="*{body}">エラー</p>
+        </div>
+        <div>
+            <label for="image">画像</label>
+            <input type="file" id="image" name="image" accept="image/*">
         </div>
         <button type="submit">投稿</button>
     </form>

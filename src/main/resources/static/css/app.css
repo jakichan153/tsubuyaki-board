@@ -82,6 +82,14 @@ h1 {
     word-break: normal;
 }
 
+.post__image {
+    border-radius: 8px;
+    display: block;
+    height: auto;
+    margin: 0.75rem 0;
+    max-width: 100%;
+}
+
 .post__avatar {
     border-radius: 999px;
     display: inline-block;

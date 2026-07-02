@@ -44,7 +44,18 @@ public class PostService {
 
     @Transactional
     public Post create(String author, String body, String avatarColor) {
-        Post post = repository.save(new Post(author, body, avatarColor, Instant.now()));
+        Post post = new Post(author, body, avatarColor, Instant.now());
+        post = repository.save(post);
+        saveTags(post, body);
+        return post;
+    }
+
+    @Transactional
+    public Post create(String author, String body, String avatarColor,
+            String imageContentType, byte[] imageData) {
+        Post post = new Post(author, body, avatarColor, Instant.now());
+        post.attachImage(imageContentType, imageData);
+        post = repository.save(post);
         saveTags(post, body);
         return post;
     }

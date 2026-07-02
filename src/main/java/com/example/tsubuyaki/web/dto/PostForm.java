@@ -4,6 +4,7 @@ import com.example.tsubuyaki.domain.Post;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.springframework.web.multipart.MultipartFile;
 
 public class PostForm {
 
@@ -16,6 +17,8 @@ public class PostForm {
     private String body;
 
     private String avatarColor = Post.DEFAULT_AVATAR_COLOR;
+
+    private MultipartFile image;
 
     public PostForm() {
     }
@@ -42,5 +45,13 @@ public class PostForm {
 
     public void setAvatarColor(String avatarColor) {
         this.avatarColor = avatarColor;
+    }
+
+    public MultipartFile getImage() {
+        return image;
+    }
+
+    public void setImage(MultipartFile image) {
+        this.image = image;
     }
 }
