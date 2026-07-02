@@ -69,14 +69,15 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("投稿一覧_更新ボタン_GET_postsへリクエストできる")
-    void 投稿一覧_更新ボタン_GET_postsへリクエストできる() throws Exception {
+    @DisplayName("投稿一覧_更新ボタン_GET_postsへ現在のキーワード付きでリクエストできる")
+    void 投稿一覧_更新ボタン_GET_postsへ現在のキーワード付きでリクエストできる() throws Exception {
         given(postService.latest()).willReturn(Collections.emptyList());
 
         mockMvc.perform(get("/posts"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(matchesPattern(
-                        "(?s).*<form[^>]*action=\"/posts/\"[^>]*method=\"get\"[^>]*>.*"
+                        "(?s).*<form[^>]*class=\"refresh-form\"[^>]*action=\"/posts\"[^>]*method=\"get\"[^>]*>.*"
+                                + "<input[^>]*type=\"hidden\"[^>]*name=\"q\"[^>]*>.*"
                                 + "<button[^>]*type=\"submit\"[^>]*>更新</button>.*"
                 )));
     }
@@ -151,6 +152,32 @@ class PostControllerTest {
                 .andExpect(model().attribute("posts", List.of(post)))
                 .andExpect(model().attribute("q", "検索"))
                 .andExpect(content().string(containsString("検索できます")));
+    }
+
+    @Test
+    @DisplayName("投稿検索_q指定_更新ボタンは検索キーワードを保持する")
+    void 投稿検索_q指定_更新ボタンは検索キーワードを保持する() throws Exception {
+        given(postService.searchByBody("検索")).willReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/posts").param("q", "検索"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<form[^>]*class=\"refresh-form\"[^>]*action=\"/posts\"[^>]*method=\"get\"[^>]*>.*"
+                                + "<input[^>]*type=\"hidden\"[^>]*name=\"q\"[^>]*value=\"検索\"[^>]*>.*"
+                                + "<button[^>]*type=\"submit\"[^>]*>更新</button>.*"
+                )));
+    }
+
+    @Test
+    @DisplayName("投稿検索_q指定_一覧リンクは検索条件なしの投稿一覧へ戻る")
+    void 投稿検索_q指定_一覧リンクは検索条件なしの投稿一覧へ戻る() throws Exception {
+        given(postService.searchByBody("検索")).willReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/posts").param("q", "検索"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern(
+                        "(?s).*<a[^>]*href=\"/posts\"[^>]*>一覧</a>.*"
+                )));
     }
 
     @Test

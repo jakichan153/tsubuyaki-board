@@ -19,7 +19,8 @@
         <input type="search" id="q" name="q" th:value="${q}">
         <button type="submit">検索</button>
     </form>
-    <form class="refresh-form" th:action="@{/posts/}" method="get">
+    <form class="refresh-form" th:action="@{/posts}" method="get">
+        <input type="hidden" name="q" th:value="${q}">
         <button type="submit">更新</button>
     </form>
 
