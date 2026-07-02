@@ -20,11 +20,11 @@ public class PostService {
     }
 
     public List<Post> latest() {
-        return repository.findTop50ByOrderByCreatedAtDesc();
+        return repository.findTop50ByDeletedAtIsNullOrderByCreatedAtDesc();
     }
 
     public List<Post> searchByBody(String keyword) {
-        return repository.findTop50ByBodyContainingOrderByCreatedAtDesc(keyword);
+        return repository.findTop50ByBodyContainingAndDeletedAtIsNullOrderByCreatedAtDesc(keyword);
     }
 
     @Transactional
@@ -34,5 +34,12 @@ public class PostService {
 
     public Optional<Post> findById(Long id) {
         return repository.findById(id);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        Post post = repository.findById(id)
+                .orElseThrow(PostNotFoundException::new);
+        post.markDeleted(Instant.now());
     }
 }

@@ -34,6 +34,9 @@ public class Post {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     protected Post() {
         // JPA
     }
@@ -67,6 +70,14 @@ public class Post {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void markDeleted(Instant deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
     @Override

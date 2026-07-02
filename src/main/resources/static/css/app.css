@@ -143,6 +143,24 @@ form[method="post"] button {
     padding: 0.45rem 1rem;
 }
 
+.post__delete-form {
+    margin-top: 0;
+}
+
+.post__delete-form .post__delete-button {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.post__delete-form .post__delete-button:hover {
+    color: var(--color-text);
+}
+
 .error {
     color: #b91c1c;
     font-size: 0.9rem;

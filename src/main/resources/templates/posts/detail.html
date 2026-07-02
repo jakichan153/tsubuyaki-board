@@ -21,10 +21,13 @@
             <span class="post__author" th:text="${post.author}">投稿者</span>
         </header>
         <p class="post__body" th:text="${post.body}">本文</p>
-        <footer>
+        <footer class="post__footer">
             <time class="post__created-at"
                   th:datetime="${post.createdAt}"
                   th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2026-05-23 09:00</time>
+            <form class="post__delete-form" th:action="@{/posts/{id}/delete(id=${post.id})}" method="post">
+                <button class="post__delete-button" type="submit">削除</button>
+            </form>
         </footer>
     </article>
     <section class="like-panel">

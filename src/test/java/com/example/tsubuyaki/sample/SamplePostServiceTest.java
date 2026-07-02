@@ -31,7 +31,7 @@ class SamplePostServiceTest {
     @Test
     @DisplayName("Service_latest_Repositoryが空のとき_空リストを返す")
     void latest_returnsEmpty_whenRepositoryIsEmpty() {
-        given(postRepository.findTop50ByOrderByCreatedAtDesc()).willReturn(Collections.emptyList());
+        given(postRepository.findTop50ByDeletedAtIsNullOrderByCreatedAtDesc()).willReturn(Collections.emptyList());
 
         assertThat(postService.latest()).isEmpty();
     }

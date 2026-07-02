@@ -80,6 +80,16 @@ public class PostController {
         return "redirect:/posts/" + id;
     }
 
+    @PostMapping("/posts/{id}/delete")
+    public String delete(@PathVariable Long id) {
+        try {
+            postService.delete(id);
+        } catch (PostNotFoundException e) {
+            throw new ResponseStatusException(NOT_FOUND, "Post not found", e);
+        }
+        return "redirect:/posts";
+    }
+
     private static String clientHash(HttpServletRequest request) {
         String source = request.getRemoteAddr() + request.getHeader("User-Agent");
         try {

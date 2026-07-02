@@ -299,6 +299,16 @@ class PostControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("投稿削除_POST_posts_id_delete_Serviceに削除を依頼し一覧へリダイレクトする")
+    void 投稿削除_POST_posts_id_delete_Serviceに削除を依頼し一覧へリダイレクトする() throws Exception {
+        mockMvc.perform(post("/posts/1/delete"))
+                .andExpect(status().isFound())
+                .andExpect(redirectedUrl("/posts"));
+
+        verify(postService).delete(1L);
+    }
+
     static Stream<Arguments> invalidPostForms() {
         String validAuthor = "alice";
         String validBody = "本文です";

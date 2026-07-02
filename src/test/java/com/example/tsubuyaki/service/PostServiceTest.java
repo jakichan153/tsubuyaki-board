@@ -34,12 +34,12 @@ class PostServiceTest {
                 new Post("alice", "新しい投稿", Instant.parse("2026-06-30T10:00:00Z")),
                 new Post("bob", "古い投稿", Instant.parse("2026-06-30T09:00:00Z"))
         );
-        given(postRepository.findTop50ByOrderByCreatedAtDesc()).willReturn(posts);
+        given(postRepository.findTop50ByDeletedAtIsNullOrderByCreatedAtDesc()).willReturn(posts);
 
         List<Post> actual = postService.latest();
 
         assertThat(actual).isSameAs(posts);
-        verify(postRepository).findTop50ByOrderByCreatedAtDesc();
+        verify(postRepository).findTop50ByDeletedAtIsNullOrderByCreatedAtDesc();
     }
 
     @Test
@@ -48,12 +48,13 @@ class PostServiceTest {
         List<Post> posts = List.of(
                 new Post("alice", "検索できます", Instant.parse("2026-06-30T10:00:00Z"))
         );
-        given(postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("検索")).willReturn(posts);
+        given(postRepository.findTop50ByBodyContainingAndDeletedAtIsNullOrderByCreatedAtDesc("検索"))
+                .willReturn(posts);
 
         List<Post> actual = postService.searchByBody("検索");
 
         assertThat(actual).isSameAs(posts);
-        verify(postRepository).findTop50ByBodyContainingOrderByCreatedAtDesc("検索");
+        verify(postRepository).findTop50ByBodyContainingAndDeletedAtIsNullOrderByCreatedAtDesc("検索");
     }
 
     @Test
@@ -82,6 +83,20 @@ class PostServiceTest {
         Optional<Post> actual = postService.findById(1L);
 
         assertThat(actual).containsSame(post);
+        verify(postRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("投稿削除_delete_対象投稿のdeletedAtを設定する")
+    void 投稿削除_delete_対象投稿のdeletedAtを設定する() {
+        Post post = new Post("alice", "削除対象です", Instant.parse("2026-06-30T10:15:00Z"));
+        given(postRepository.findById(1L)).willReturn(Optional.of(post));
+        Instant before = Instant.now();
+
+        postService.delete(1L);
+
+        Instant after = Instant.now();
+        assertThat(post.getDeletedAt()).isBetween(before, after);
         verify(postRepository).findById(1L);
     }
 }

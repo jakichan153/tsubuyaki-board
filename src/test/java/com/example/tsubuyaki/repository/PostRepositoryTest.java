@@ -32,7 +32,7 @@ class PostRepositoryTest {
         }
         postRepository.saveAll(posts);
 
-        List<Post> actual = postRepository.findTop50ByOrderByCreatedAtDesc();
+        List<Post> actual = postRepository.findTop50ByDeletedAtIsNullOrderByCreatedAtDesc();
 
         assertThat(actual).hasSize(50);
         assertThat(actual).extracting(Post::getAuthor)
@@ -48,7 +48,7 @@ class PostRepositoryTest {
         postRepository.save(new Post("bob", "対象外です", Instant.parse("2026-06-30T11:00:00Z")));
         postRepository.save(new Post("carol", "新しい検索結果", Instant.parse("2026-06-30T12:00:00Z")));
 
-        List<Post> actual = postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("検索");
+        List<Post> actual = postRepository.findTop50ByBodyContainingAndDeletedAtIsNullOrderByCreatedAtDesc("検索");
 
         assertThat(actual).extracting(Post::getAuthor)
                 .containsExactly("carol", "alice");
@@ -59,7 +59,7 @@ class PostRepositoryTest {
     void 投稿検索_一致しない場合_空配列を返す() {
         postRepository.save(new Post("alice", "検索できます", Instant.parse("2026-06-30T10:00:00Z")));
 
-        List<Post> actual = postRepository.findTop50ByBodyContainingOrderByCreatedAtDesc("該当なし");
+        List<Post> actual = postRepository.findTop50ByBodyContainingAndDeletedAtIsNullOrderByCreatedAtDesc("該当なし");
 
         assertThat(actual).isEmpty();
     }
@@ -73,5 +73,31 @@ class PostRepositoryTest {
         Post actual = postRepository.findById(saved.getId()).orElseThrow();
 
         assertThat(actual.getAvatarColor()).isEqualTo("green");
+    }
+
+    @Test
+    @DisplayName("投稿一覧_論理削除済み投稿は表示しない")
+    void 投稿一覧_論理削除済み投稿は表示しない() {
+        Post deleted = new Post("alice", "削除済みです", Instant.parse("2026-06-30T10:00:00Z"));
+        deleted.markDeleted(Instant.parse("2026-06-30T11:00:00Z"));
+        postRepository.save(deleted);
+        postRepository.save(new Post("bob", "表示されます", Instant.parse("2026-06-30T09:00:00Z")));
+
+        List<Post> actual = postRepository.findTop50ByDeletedAtIsNullOrderByCreatedAtDesc();
+
+        assertThat(actual).extracting(Post::getAuthor)
+                .containsExactly("bob");
+    }
+
+    @Test
+    @DisplayName("投稿一覧_論理削除されていない投稿は従来どおり表示する")
+    void 投稿一覧_論理削除されていない投稿は従来どおり表示する() {
+        postRepository.save(new Post("alice", "古い投稿です", Instant.parse("2026-06-30T09:00:00Z")));
+        postRepository.save(new Post("bob", "新しい投稿です", Instant.parse("2026-06-30T10:00:00Z")));
+
+        List<Post> actual = postRepository.findTop50ByDeletedAtIsNullOrderByCreatedAtDesc();
+
+        assertThat(actual).extracting(Post::getAuthor)
+                .containsExactly("bob", "alice");
     }
 }
